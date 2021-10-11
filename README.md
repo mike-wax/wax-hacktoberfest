@@ -8,8 +8,11 @@ twitter: @thisritchie
 
 any demo videos, instructions, or memes
 Sync: https://www.youtube.com/watch?v=xjzJHHui0z0
+
 SQL reports: https://youtu.be/X_SbQ1gkzsw
+
 Sending emails: https://www.youtube.com/watch?v=2LJ4mAHilXI
+
 
 a brief description of how you used Supabase:
 This app uses supabase to two way sync a Google Sheet to Postgres in realtime. I'm also using supabase auth on the backend.
