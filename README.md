@@ -4,7 +4,7 @@
 
 Sorry! Google didn't approve the app in time, but you can paste the code (just two files) into a blank Google Sheet and it should work after you update the keys for supa
 
-## list of team members github handles (and twitter if they have one)**
+## list of team members github handles (and twitter if they have one)
 
 
 gh: @mike-wax
