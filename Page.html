@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Wax</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+    <!-- <link rel="stylesheet" href="https://storage.cloud.google.com/seekwell-cdn/tailout.css"> -->
+    <link href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+</head>
+
+<body>
+    <div id="vapp" class="text-gray-900">
+        <div v-if="loading" class="pt-6">
+            <div class="spinner-md"></div>
+            <div class="pt-32 text-center">
+                Working...
+            </div>
+            <div class="pt-4 text-center">
+            </div>
+        </div>
+        <div v-else class="">
+            <div class="font-black text-2xl mb-8 px-3 mt-3">
+                {{getViewName()}}
+            </div>
+            <div v-if="view==='main'">
+                <div @click="view = 'addingSync'" class="px-3 py-3 hover:bg-gray-100 cursor-pointer">
+                    <div class="cursor-pointer font-bold text-gray-900">
+                        Setup database sync
+                    </div>
+                    <div class="text-gray-500">
+                        Sync any Sheet to a new Postgres or existing SQL database
+                    </div>
+                </div>
+                <div @click="newReport" class="px-2 py-2 hover:bg-gray-100 cursor-pointer">
+                    <div class="cursor-pointer font-bold text-gray-900">
+                        Add a report template
+                    </div>
+                    <div class="text-gray-500">
+                        Create a dynamic report using SQL with data from your database
+                    </div>
+                </div>
+                <div @click="view = 'addingButton'" class="px-2 py-2 hover:bg-gray-100 cursor-pointer">
+                    <div class="cursor-pointer font-bold text-gray-900">
+                        Add an Action button
+                    </div>
+                    <div class="text-gray-500">
+                        Trigger Wax workflows from a button without having the app open
+                    </div>
+                </div>
+                <div @click="addWaxDotRunSheet" class="px-2 py-2 hover:bg-gray-100 cursor-pointer">
+                    <div class="cursor-pointer font-bold text-gray-900">
+                        Add a Wax configuation Sheet
+                    </div>
+                    <div class="text-gray-500">
+                        Controls how Wax behaves within this Google Sheet
+                    </div>
+                </div>
+            </div>
+            <div v-else-if="view === 'addingButton'" class="px-3">
+                <div class="rounded-sm border mb-2">
+                    <input v-model="btn.name" class="pl-2 py-2 form-input block w-full"
+                        placeholder="Action Name (from wax.run)" />
+                </div>
+                <div class="rounded-sm border mb-2">
+                    <input v-model="btn.sheetName" class="pl-2 py-2 form-input block w-full" placeholder="Sheet Name" />
+                </div>
+                <div class="mt-4">
+                    <button @click="addButton" type="button"
+                        class="inline-flex items-center px-4 py-2 border border-transparent text-base leading-6 font-medium rounded-md text-white bg-black hover:bg-gray-600 transition ease-in-out duration-150">
+                        Add
+                    </button>
+                </div>
+            </div>
+            <div v-else-if="view === 'addingSync'">
+                <div v-for="(value, name, index) in sheetsMeta" :key="index" class="px-3 py-3 hover:bg-gray-100">
+                    <div class="flex justify-between">
+                        <div @click="toggleSheet(name)" class="text-gray-900 cursor-pointer">
+                            {{name}}
+                        </div>
+                        <div>
+                            <input v-model="value.selected" type="checkbox"
+                                class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded" />
+                        </div>
+                    </div>
+
+                    <div v-if="value.toggled">
+                        <div v-for="(col, index) in value.cols" class="ml-4"
+                            :class="{'font-bold':  (col === value.config.key)}">
+                            {{col}}
+                            <span v-if="col === value.config.key">
+                                (key)
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="sticky bottom-0 py-8 px-3 w-full bg-white z-10 border-t">
+                    <div class="flex justify-between w-full">
+                        <div class="font-bold">
+                            {{getSyncCount()}} tables selected
+                        </div>
+                        <div @click="firstSync" class="font-bold text-blue-500 hover:text-blue-400 cursor-pointer">
+                            Sync now
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- message center -->
+        <div v-if="showMessage" class="bottom-0 left-0 z-10 fixed w-full">
+            <div class="px-2 py-1 mb-3 mx-3 bg-black text-white rounded-md shadow-md">
+                <div v-html="message"></div>
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        const App = new Vue({
+            el: '#vapp',
+            data: {
+                blocks: {},
+                user: {},
+                sheetsMeta: {},
+                message: '',
+                showMessage: false,
+                loading: false,
+                view: 'main',
+                btn: {
+                    name: '',
+                    icon: '',
+                    sheetName: '',
+                }
+            },
+            methods: {
+                msg(opts) {
+                    var vm = this
+                    vm.showMessage = true
+                    vm.message = opts.message
+                    setTimeout(() => {
+                        vm.showMessage = false
+                    }, opts.time || 7000);
+                },
+                uuidv4() {
+                    return ([1e7] + 1e3 + 4e3 + 8e3 + 1e11).replace(/[018]/g, c =>
+                        (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+                    );
+                },
+                toggleSheet(name) {
+                    this.sheetsMeta[name].toggled = !this.sheetsMeta[name].toggled
+                    if (this.sheetsMeta[name].toggled) {
+                        google.script.run
+                            .withSuccessHandler(function (data) {
+                                console.log('added button: ', data)
+                            }).withFailureHandler(function (data) {
+                                console.error('add btn error: ', data)
+                            }).gasGoToSheet(name);
+                    }
+                },
+                getSyncCount() {
+                    let count = 0
+                    for (const key of Object.keys(this.sheetsMeta)) {
+                        if (this.sheetsMeta[key].selected) count += 1
+                    }
+                    return count
+                },
+                firstSync() {
+                    var vm = this
+                    vm.loading = true
+                    google.script.run
+                        .withSuccessHandler(function (data) {
+                            console.log('firstSync: ', data)
+                            vm.loading = false
+                            vm.view = 'main'
+                        }).withFailureHandler(function (data) {
+                            console.error('firstSync: ', data)
+                            vm.msg({
+                                message: `Sync error.`
+                            })
+                            vm.loading = false
+                        }).gasSyncNow(vm.sheetsMeta);
+                },
+                newReport() {
+                    var vm = this
+                    vm.loading = true
+                    google.script.run
+                        .withSuccessHandler(function (data) {
+                            console.log('newReport: ', data)
+                            vm.loading = false
+                            vm.view = 'main'
+                        }).withFailureHandler(function (data) {
+                            console.error('newReport: ', data)
+                            vm.msg({
+                                message: `Report error.`
+                            })
+                            vm.loading = false
+                        }).gasNewReport();
+                },
+                getViewName() {
+                    let viewNames = {
+                        main: 'Wax',
+                        addingSync: 'Sync',
+                        addingButton: 'Action'
+                    }
+                    let vn = viewNames[this.view]
+                    if (vn) return vn
+                    return 'Wax'
+                },
+                addWaxDotRunSheet() {
+                    var vm = this
+                    google.script.run
+                        .withSuccessHandler(function (data) {
+                            console.log('added button: ', data)
+                        }).withFailureHandler(function (data) {
+                            console.log('add btn error: ', data)
+                            vm.msg({
+                                message: `Save error`
+                            })
+                        }).gasAddWaxDotRunSheet();
+                },
+                getAllSheetsMeta() {
+                    var vm = this
+                    google.script.run
+                        .withSuccessHandler(function (data) {
+                            console.log('getAllSheetsMeta: ')
+                            vm.sheetsMeta = JSON.parse(data)
+                        }).withFailureHandler(function (data) {
+                            console.error('getAllSheetsMeta: ', data)
+                            vm.msg({
+                                message: `Sheet meta error`
+                            })
+                        }).gasGetAllSheetsMeta();
+                },
+                addButton() {
+                    var vm = this
+                    vm.addingButton = false
+                    google.script.run
+                        .withSuccessHandler(function (data) {
+                            console.log('added button: ', data)
+                        }).withFailureHandler(function (data) {
+                            console.log('add btn error: ', data)
+                            vm.msg({
+                                message: `Save error`
+                            })
+                        }).gasAddButton(vm.btn);
+                },
+                saveBlock(auto) {
+                    var vm = this
+                    if (window.editor) vm.block.code = window.editor.getDoc().getValue()
+                    if (!auto) {
+                        vm.msg({
+                            message: `Saved!`
+                        })
+                    }
+                    google.script.run
+                        .withSuccessHandler(function (data) {
+                            console.log('gasUpdateBlockInPg: ', data)
+                        }).withFailureHandler(function (data) {
+                            console.log('gasUpdateBlockInPg: ', data)
+                            vm.msg({
+                                message: `Save error`
+                            })
+                        }).gasUpdateBlockInPg(vm.block, false);
+                },
+                getRandomInt(min, max) {
+                    min = Math.ceil(min);
+                    max = Math.floor(max);
+                    return Math.floor(Math.random() * (max - min) + min); //The maximum is exclusive and the minimum is inclusive
+                },
+                sleep(time) {
+                    return new Promise((resolve) => setTimeout(resolve, time));
+                },
+                startSupa() {
+                    var vm = this
+                    console.log('startSupa...')
+                    var SUPABASE_URL = 'REPLACE'
+                    var SUPABASE_KEY = 'REPLACE'
+                    var supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
+                    supabase.from('test').select()
+                        .then((response) => {
+                            console.log('res2: ', response)
+                        })
+                        .catch((err) => {
+                            console.error('supabase error: ', err)
+                            alert(err)
+                        })
+                    var mySubscription = supabase
+                        .from('*')
+                        .on('*', payload => {
+                            console.log('Change received!', payload)
+                            let waitFor = vm.getRandomInt(1, 3000)
+                            vm.sleep(waitFor).then(() => {
+                                google.script.run
+                                    .withSuccessHandler(function (data) {
+                                        console.log('gasHandleSupaRealTime: ', data)
+                                    }).withFailureHandler(function (data) {
+                                        console.log('gasHandleSupaRealTime: ', data)
+                                    }).gasHandleSupaRealTime(payload);
+                            });
+                        })
+                        .subscribe()
+                }
+            },
+            watch: {
+                'block': {
+                    handler: function (newVal, oldVal) {
+                        if (newVal && newVal.destination) {
+                            console.log('newVal: ', newVal)
+                            this.saveBlock(true)
+                        }
+                    },
+                    deep: true,
+                },
+            },
+            computed: {
+                filteredBlocks() {
+                    console.log('filtering this.blockList: ', this.blockList, this.blockSearchTerm)
+                    let bl = this.blockList.filter(block => block.title.toLowerCase().includes(this
+                        .blockSearchTerm.toLowerCase()))
+                    console.log('filtering this.blockList2: ', bl)
+                    return bl.slice(0, 20)
+                },
+            },
+            created() {
+                this.startSupa()
+                this.getAllSheetsMeta()
+            },
+        })
+    </script>
+</body>
+
+</html>
