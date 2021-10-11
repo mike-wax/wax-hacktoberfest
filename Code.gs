@@ -1,6 +1,7 @@
-var SUPABASE_URL = 'REPLACE'
-var apiKey = 'REPLACE'
-let waxApiKey = 'REPLACE'
+var SUPABASE_URL = 'https://grbgsuelgpoqmrnnykvk.supabase.co'
+var WAX_API_URL = 'https://seekwellapi.ngrok.io/api'
+var apiKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTYzMzQ2MTQ3NywiZXhwIjoxOTQ5MDM3NDc3fQ.AFyUwdb1zLohzOoGSZnmsI14NU-njXvxBP5F3IC7z8M'
+let waxApiKey = 'ff162314-3749-441e-82cd-70c83c65de71'
 
 var icons = [
   '1', '2', '3', '4', '5', 
@@ -16,7 +17,7 @@ function testSendEmail(opts) {
   
   var now = new Date();
   opts = {
-    recipient: 'mike@seekwell.io',
+    recipient: 'mike@wax.run',
     msg: `testing from appsscript ${now.toString()}`,
     title: 'testing...',
   }
@@ -228,7 +229,7 @@ function runSql(opts) {
   let email = Session.getEffectiveUser().getEmail();
   let ss_id = SpreadsheetApp.getActiveSpreadsheet().getId();
   
-  let url = 'https://seekwellapi.ngrok.io/api'
+  let url = WAX_API_URL
   let options = {
       'method': 'post',
       'contentType': 'application/json',
