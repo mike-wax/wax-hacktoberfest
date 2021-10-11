@@ -21,7 +21,7 @@ Sending emails: https://www.youtube.com/watch?v=2LJ4mAHilXI
 
 
 ## a brief description of how you used Supabase:
-This app uses supabase to two way sync a Google Sheet to Postgres in realtime. I'm also using supabase auth on the backend.
+This app uses supabase to two way sync a Google Sheet to Postgres in realtime. I'm also using supabase auth on the backend. The app also has a "config" Sheet which you can configure workflows on (e.g. send an email when the value of a Sheet changes or automatically run a query everytime a row changes). This makes it very useful for quickly building internal tools, especially if your app is built on Supabase!
 
 ## any other info you want the judges to know (motivations/ideas/process)
 
