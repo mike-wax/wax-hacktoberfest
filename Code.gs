@@ -1,7 +1,7 @@
-var SUPABASE_URL = 'https://grbgsuelgpoqmrnnykvk.supabase.co'
-var WAX_API_URL = 'https://seekwellapi.ngrok.io/api'
-var apiKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlhdCI6MTYzMzQ2MTQ3NywiZXhwIjoxOTQ5MDM3NDc3fQ.AFyUwdb1zLohzOoGSZnmsI14NU-njXvxBP5F3IC7z8M'
-let waxApiKey = 'ff162314-3749-441e-82cd-70c83c65de71'
+var SUPABASE_URL = ''
+var WAX_API_URL = ''
+var apiKey = ''
+let waxApiKey = ''
 
 var icons = [
   '1', '2', '3', '4', '5', 
